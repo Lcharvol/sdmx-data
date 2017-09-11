@@ -4,7 +4,7 @@ const { deepMerge } = require('./utils');
 const supportedModes = {
   development: require('./development'),
   production: require('./production'),
-  testing: require('./test'),
+  test: require('./test'),
 };
 const config = supportedModes[process.env.NODE_ENV] || {};
 const { secret: { path } = {} } = config;

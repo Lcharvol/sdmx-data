@@ -1,11 +1,17 @@
-import config from '../../config';
-import boot from '../run';
+import should from 'should';
 import axios from 'axios';
+import config from '../../config';
+import run from '../run';
 
-axios.get('/ping')
-.then(function (response) {
-  console.log('ceci est une reponse: ', response);
-})
-.catch(function (error) {
-  console.log('cest une erreur: ', error);
+const { describe, it } = global;
+
+describe('Ping test', () => {
+  it('Request should send an object with a ping key et a pong value', rep => {
+    const pong = run({ config }).then(() => axios.get('hhtp://localhost:3004/ping'))
+    .then(({ data: { ping }}) => {
+      should(ping).eql('pong');
+      rep();
+    })
+    .catch(rep)
+  });
 });
