@@ -1,6 +1,7 @@
-import init from './http';
+import initHttp from './http';
+import initData from './data';
 import initMongo from './mongo';
 
-const run = ctx => init(ctx).then(initMongo(ctx));
+const run = ctx => initData(ctx).then(initMongo).then(initHttp);
 
 export default run;
