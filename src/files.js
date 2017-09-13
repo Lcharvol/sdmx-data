@@ -1,6 +1,9 @@
 import express from 'express';
 import fs from 'fs';
+import debug from 'debug';
 import { filter, match, reduce, propOr } from 'ramda';
+
+const logger = debug('sdmx:hhtp');
 
 const getGroupTypes = data => (req, res) => {
   const { types, dataflows } = data;

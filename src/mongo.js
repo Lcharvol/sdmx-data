@@ -4,12 +4,32 @@ import express from 'express';
 
 const logger = debug('sdmx:mongo');
 
-const getTypes = (req, res) => res.json({ test: 'test' });
+const getMongoData = (db, coll) => (req, res) => {
+  const collection = db.collection(coll);
+  collection.find({}).toArray((err, docs) => {
+    if (err) throw err;
+    logger('Found types in mongodb');
+    res.json(docs);
+  });
+};
 
-export const initMongo = (data) => {
+const getFilteredDataflows = db => (req, res) => {
+  const collection = db.collection('dataflows');
+  const { search } = req.query;
+  const { lang } = req.params;
+  collection.find({ name: { lang: search } }).toArray((err, docs) => {
+    if (err) throw err;
+    logger('Found dataflows in mongodb');
+    res.json(docs);
+  });
+};
+
+export const initMongo = db => {
   const app = express();
   app
-    .get('/types', getTypes);
+    .get('/types', getMongoData(db, 'types'))
+    .get('/dataflows/:lang/', getFilteredDataflows(db))
+    .get('/dataflows', getMongoData(db, 'dataflows'));
   return app;
 };
 
