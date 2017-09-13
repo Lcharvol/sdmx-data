@@ -28,20 +28,19 @@ const data = {
     },
   ],
 }
-
-// describe('Pong test', () => {
-//   it('Request should send an object with a ping key et a pong value', (done) => {
-//     run({ config }
-//       .then(({ http: { url }}) => axios.get(`${url}/ping`))
-//       .then(({ data: { ping } }) => {
-//         should(ping).eql('pong');
-//         done();
-//       })
-//       .catch(done)
-//   });
-// });
 describe('Pong test', () => {
-  it('Request should send an object with a ping key et a pong value', (done) => {
+  it('Should be equal to pong', (done) => {
+    run({ config })
+      .then(({ http: { url }}) => axios.get(`${url}/ping`))
+      .then(({ data: { ping } }) => {
+        should(ping).eql('pong');
+        done();
+      }).catch(done);
+  });
+});
+
+describe('groupTypes test', () => {
+  it('Request should send an 2 a and 1 b', (done) => {
     run({ config, data })
       .then(({ http }) => {
         return axios.get(`${http.url}/groupTypes`)
