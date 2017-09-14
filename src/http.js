@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import debug from 'debug';
 import { map, reduce, toPairs, flatten } from 'ramda';
+import bodyParser from 'body-parser';
 import compression from 'compression';
 import morgan from 'morgan-debug';
 import initFiles from './files';
@@ -78,13 +79,35 @@ const getMongoGroupTypes = db => (req, res) => {
     });
 };
 
+const getPostFilteredDataflows = db => (req, res, next) => {
+  const collection = db.collection('dataflows');
+  const { search, f, lang, ...rest } = req.body;
+  let searchParams = [];
+  let fieldsValue;
+  const restQuery = flatten(map(getRestQuery(lang), toPairs(rest)));
+  if (search) {
+    const searchValues = search.indexOf(',') >= 0 ? search.split(',') : [search];
+    searchParams = map(getSearchParams(lang), searchValues);
+  }
+  if (f) {
+    fieldsValue = f.indexOf(',') >= 0 ? f.split(',') : [f];
+  }
+  const query = { $and: [...searchParams, ...restQuery] };
+  collection.find(query, fieldsValue).toArray((err, docs) => {
+    if (err) return next(err);
+    logger('Found dataflows in mongodb');
+    res.json(docs);
+  });
+};
+
 const initMongo = db => {
   const app = express();
   app
     .get('/types', getMongoData(db, 'types'))
     .get('/dataflows', getMongoData(db, 'dataflows'))
     .get('/groupTypes', getMongoGroupTypes(db))
-    .get('/dataflows/:lang/', getFilteredDataflows(db));
+    .get('/dataflows/:lang/', getFilteredDataflows(db))
+    .post('/dataflows', getPostFilteredDataflows(db));
   return app;
 };
 
@@ -95,6 +118,7 @@ const init = ctx => {
 
   const promise = new Promise(resolve => {
     app
+      .use(bodyParser.urlencoded({ extended: false }))
       .get('/ping', (req, res) => res.json({ ping: 'pong' }))
       .use(compression())
       .use(morgan('sdmx:hhtp', 'dev'))
