@@ -1,22 +1,8 @@
 import express from 'express';
-import http from 'http';
 import debug from 'debug';
-import { map, reduce, toPairs, flatten } from 'ramda';
-import bodyParser from 'body-parser';
-import compression from 'compression';
-import morgan from 'morgan-debug';
-import initFiles from './files';
+import { map, reduce, toPairs, flatten, compose } from 'ramda';
 
 const logger = debug('sdmx:hhtp');
-
-const getUrl = server => `http://${server.address().address}:${server.address().port}`;
-
-const error = (err, req, res, next) => {
-  console.log(err.stack);
-  res.status(500).json({
-    message: err.toString(),
-  });
-};
 
 const getMongoData = (db, coll) => (req, res, next) => {
   const collection = db.collection(coll);
@@ -34,10 +20,10 @@ const getSearchParams = lang => searchValue => ({ $or:
   ],
 });
 
-const getRestQuery = lang => ([props, searchValue]) => ({ $or:
+const getRestQuery = lang => ([props, value]) => ({ $or:
   [
-    { [`${props}.${lang}`]: new RegExp(searchValue, 'i') },
-    { [`${props}`]: new RegExp(searchValue, 'i') },
+    { [`${props}.${lang}`]: new RegExp(value, 'i') },
+    { [`${props}`]: new RegExp(value, 'i') },
   ],
 });
 
@@ -47,7 +33,13 @@ const getFilteredDataflows = db => (req, res, next) => {
   const { lang } = req.params;
   let searchParams = [];
   let fieldsValue;
-  const restQuery = flatten(map(getRestQuery(lang), toPairs(rest)));
+  const restQuery = compose(
+    flatten,
+    map(getRestQuery(lang)),
+    toPairs,
+  )(rest);
+  // const restQuery = flatten(map(getRestQuery(lang), toPairs(rest)));
+  console.log(restQuery);
   if (search) {
     const searchValues = search.indexOf(',') >= 0 ? search.split(',') : [search];
     searchParams = map(getSearchParams(lang), searchValues);
@@ -111,28 +103,4 @@ const initMongo = db => {
   return app;
 };
 
-const init = ctx => {
-  const { config: { server: { host, port } }, data, db } = ctx;
-  const app = express();
-  const httpServer = http.createServer(app);
-
-  const promise = new Promise(resolve => {
-    app
-      .use(bodyParser.urlencoded({ extended: false }))
-      .get('/ping', (req, res) => res.json({ ping: 'pong' }))
-      .use(compression())
-      .use(morgan('sdmx:hhtp', 'dev'))
-      .use('/files', initFiles(data))
-      .use('/mongo', initMongo(db))
-      .use(error);
-
-    httpServer.listen(port, host, () => {
-      httpServer.url = getUrl(httpServer);
-      logger(`server started on ${httpServer.url}`);
-      resolve({ ...ctx, http: httpServer });
-    });
-  });
-  return promise;
-};
-
-export default init;
+export default initMongo;

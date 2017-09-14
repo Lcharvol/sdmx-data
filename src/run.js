@@ -1,4 +1,4 @@
-import initHttp from './http';
+import initHttp from './http/index';
 import initData from './data';
 import initMongo from './mongo';
 
